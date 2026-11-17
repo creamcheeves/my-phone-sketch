@@ -22,21 +22,19 @@ let songNotes = [
   'A5', 'G5', 'E5', 'C5'
 ];
 
-// 1 = quarter note
-// 0.5 = eighth note
-// 2 = half note
+// rhythm is the delay following the note that plays from the above array
 let songRhythm = [
-  0.5, 0.5, 1, 1,
-  0.5, 0.5, 1, 1,
+  0.5, 0.5, 0.5, 2,
+  0.5, 2, 1, 1,
 
   0.5, 0.5, 1, 1,
   1, 0.5, 0.5, 1,
 
-  0.5, 0.5, 1, 1,
-  0.5, 0.5, 1, 1,
+  0.5, 0.5, 0.5, 2,
+  0.5, 2, 1, 1,
 
   0.5, 0.5, 1, 1,
-  1, 0.5, 0.5, 1
+  1, 0.5, 0.5, 1,
 ];
 
 let tempo = 120; // bpm
@@ -58,7 +56,7 @@ function userSetupComplete() {
 // the scale: C major pentatonic, two octaves. five notes to an octave, none of them clash.
 // (it cannot be called scale. p5.js already has a function with that name.)
 let scaleNotes = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6'];
-let velocity = 100;                   // how hard each note is struck, from 0 to 127
+let velocity = 50;                   // how hard each note is struck, from 0 to 127
 
 let mainSynthInstrument;      // from smplr
 let instrumentReady = false;  // true once its recordings have arrived
@@ -85,7 +83,9 @@ async function setup() {
 
   // smplr is a newer kind of library, a module, so it is loaded here and not in index.html
   let smplr = await import('https://cdn.jsdelivr.net/npm/smplr@1.0.0/dist/index.mjs');
-  mainSynthInstrument = smplr.Soundfont(audio, { instrument: 'synth_bass_1' });
+
+  // -- MAIN INSTRUMENT SETUP --
+  mainSynthInstrument = smplr.Soundfont(audio, { instrument: 'lead_3_calliope' });
 
   // there is no await here, so draw() starts straight away and says 'Loading instrument…'
   mainSynthInstrument.ready.then(function () {
@@ -100,7 +100,9 @@ async function setup() {
     console.log(error);
   });
 
-  ambienceInstrument = smplr.Soundfont(audio, { instrument: 'synth_choir' });
+  // -- OTHER INSTRUMENT SETUP --
+  // -- instrument options at https://cdn.jsdelivr.net/npm/smplr@1.0.0/dist/index.mjs -- 
+  ambienceInstrument = smplr.Soundfont(audio, { instrument: 'synth_brass_2' });
 }
 
 function draw() {
@@ -225,23 +227,26 @@ function updateSong() {
   let currentTime = millis();
 
   if (currentTime >= nextNoteTime) {
+    let beatDuration = 60000 / tempo;
+    let noteDuration = (beatDuration * songRhythm[currentNote]) / 1000;
 
     // play the current note
     mainSynthInstrument.start({
       note: songNotes[currentNote],
-      velocity: velocity
+      velocity: velocity,
+      duration: noteDuration * 0.85
     });
 
-    if (currentNote % 8 == 1)
+    if (true) // currentNote % 8 == 1
     {
       ambienceInstrument.start({
         note: songNotes[currentNote],
-        velocity: 20
+        velocity: 40,
+        duration: noteDuration * 1.5
       });
     }
 
     // timer for the next note
-    let beatDuration = 60000 / tempo;
     nextNoteTime = currentTime + (beatDuration * songRhythm[currentNote]);
 
     currentNote++;
