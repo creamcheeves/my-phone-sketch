@@ -1,15 +1,3 @@
-// 05 · Dial to Note · Motion
-// A marimba, and a dial that runs through a scale. The input turns the dial.
-// The question is: which note? Each time the dial reaches a new note, the marimba plays it.
-// Here the whole phone is the dial. Lay it flat on a table and turn it, like a knob.
-// It is the p5-phone Orientation example: rotationX is the turn, from 0 to 360.
-// The touch and sound versions play the same marimba in the same way.
-// Only the input part at the bottom of this file is different. Open all three and compare.
-//
-// The marimba is a set of recordings of a real one, one for each note. That is a sampled instrument.
-// The library smplr downloads the recordings the first time the page opens. That takes a moment,
-// and with no network there is no marimba.
-
 // H7: ask the phone to treat this page like a music player, so silent mode may not mute it.
 // Not tested on a phone yet. If it changes nothing, delete this line.
 if ('audioSession' in navigator) navigator.audioSession.type = 'playback';
@@ -17,11 +5,54 @@ if ('audioSession' in navigator) navigator.audioSession.type = 'playback';
 // the browser's own sound system. smplr plays through it.
 let audio = new AudioContext();
 
+
+// ---------- MUSIC SEQUENCER ----------
+
+// C major scale
+let songNotes = [
+  'C5', 'E5', 'G5', 'E5',
+  'A5', 'G5', 'E5', 'D5',
+
+  'C5', 'E5', 'G5', 'A5',
+  'C6', 'A5', 'G5', 'E5',
+
+  'D5', 'G5', 'A5', 'G5',
+  'E5', 'D5', 'C5', 'D5',
+
+  'E5', 'G5', 'A5', 'C6',
+  'A5', 'G5', 'E5', 'C5'
+];
+
+// 1 = quarter note
+// 0.5 = eighth note
+// 2 = half note
+let songRhythm = [
+  0.5, 0.5, 1, 1,
+  0.5, 0.5, 1, 1,
+
+  0.5, 0.5, 1, 1,
+  1, 0.5, 0.5, 1,
+
+  0.5, 0.5, 1, 1,
+  0.5, 0.5, 1, 1,
+
+  0.5, 0.5, 1, 1,
+  1, 0.5, 0.5, 1
+];
+
+let tempo = 120; // bpm
+let currentNote = 0;
+let nextNoteTime = 0;
+
 // phones only start sound inside a tap. p5-phone's tap message starts this sound system
 // right there (it starts any AudioContext the sketch makes), then calls userSetupComplete().
 let unlocked = false; // has the tap turned the sound on?
 function userSetupComplete() {
   unlocked = true;
+
+  if (instrumentReady) {
+    startSong();
+  }
 }
 
 // the feel of the piece. change these before you change anything else.
@@ -55,9 +86,15 @@ async function setup() {
   // smplr is a newer kind of library, a module, so it is loaded here and not in index.html
   let smplr = await import('https://cdn.jsdelivr.net/npm/smplr@1.0.0/dist/index.mjs');
   instrument = smplr.Soundfont(audio, { instrument: instrumentName });
+
   // there is no await here, so draw() starts straight away and says 'Loading instrument…'
   instrument.ready.then(function () {
     instrumentReady = true;
+
+    if (unlocked) 
+      {
+        startSong();
+      }
   }).catch(function (error) {
     loadProblem = 'The instrument did not load. Check the network.';
     console.log(error);
@@ -72,13 +109,12 @@ function draw() {
   if (raw >= 0) {
     position = raw;
   }
+
   // 2. map it: the position range onto the notes of the scale
   let newIndex = constrain(floor(position * scaleNotes.length), 0, scaleNotes.length - 1);
+
   // 3. use it: a note plays only when the dial moves onto a new one
-  if (raw >= 0 && newIndex !== noteIndex) {
-    noteIndex = newIndex;
-    playNote(noteIndex);
-  }
+  updateSong();
 
   drawDial();
   drawInput();
@@ -92,13 +128,10 @@ function draw() {
   drawNotes();
 }
 
-// ---------- the sound. this part is the same in the touch, motion and sound versions. ----------
-
 // strike one note of the scale
 function playNote(n) {
-  if (!instrumentReady) {
-    return;
-  }
+  if (!instrumentReady) return;
+
   instrument.start({ note: scaleNotes[n], velocity: velocity });
   soundPlayed = true;
 }
@@ -154,10 +187,12 @@ function drawDial() {
 // the notes along the bottom. the input part adds its own lines.
 function drawNotes() {
   let lines = findings.slice(); // a copy, so the list below can grow
+
   // H6, H8: until the first sound plays, say what usually silences a phone
   if (!soundPlayed) {
     lines.push('No sound? Check silent mode.');
   }
+
   fill(160);
   noStroke();
   textSize(13);
@@ -165,6 +200,36 @@ function drawNotes() {
   for (let i = lines.length - 1; i >= 0; i--) {
     text(lines[i], 20, y);
     y = y - 18;
+  }
+}
+
+// start the song
+function startSong() {
+  currentNote = 0;
+  nextNoteTime = millis();
+}
+
+// update and play the song
+function updateSong() {
+  if (!unlocked || !instrumentReady) return;
+
+  let currentTime = millis();
+
+  if (currentTime >= nextNoteTime) {
+
+    // play the current note
+    instrument.start({
+      note: songNotes[currentNote],
+      velocity: velocity
+    });
+
+    // timer for the next note
+    let beatDuration = 60000 / tempo;
+    nextNoteTime = currentTime + (beatDuration * songRhythm[currentNote]);
+
+    currentNote++;
+
+    if (currentNote >= songNotes.length) { currentNote = 0; }
   }
 }
 
@@ -195,9 +260,9 @@ function setupInput() {
 
 // where the phone points the dial, from 0 to 1. -1 if there are no motion readings
 function readPosition() {
-  if (!window.sensorsEnabled || !motionArrived) {
-    return -1;
-  }
+  if (!window.sensorsEnabled || !motionArrived) return -1;
+
+  // convert the phone's rotation into a value usable by the program
   return constrain((180 - rotationX) / 180, -1, 1);
 }
 
