@@ -7,7 +7,7 @@ let audio = new AudioContext();
 
 // ---------- MUSIC SEQUENCER ----------
 
-// C major scale
+// c major scale
 let songNotes = [
   'C5', 'E5', 'G5', 'E5',
   'A5', 'G5', 'E5', 'D5',
@@ -58,15 +58,16 @@ function userSetupComplete() {
 // the scale: C major pentatonic, two octaves. five notes to an octave, none of them clash.
 // (it cannot be called scale. p5.js already has a function with that name.)
 let scaleNotes = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6'];
-let instrumentName = 'synth_bass_1';  // try 'vibraphone', 'kalimba', 'celesta' or 'acoustic_grand_piano'
 let velocity = 100;                   // how hard each note is struck, from 0 to 127
 
-let instrument;              // from smplr
-let instrumentReady = false; // true once its recordings have arrived
+let mainSynthInstrument;      // from smplr
+let instrumentReady = false;  // true once its recordings have arrived
 let loadProblem = '';
-let position = 0.5;          // from 0 to 1. where the dial points
-let noteIndex = -1;          // which note of the scale the dial is on. -1 is none yet
-let soundPlayed = false;     // has any sound played yet?
+let position = 0.5;           // from 0 to 1. where the dial points
+let noteIndex = -1;           // which note of the scale the dial is on. -1 is none yet
+let soundPlayed = false;      // has any sound played yet?
+
+let ambienceInstrument;
 
 async function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -84,10 +85,10 @@ async function setup() {
 
   // smplr is a newer kind of library, a module, so it is loaded here and not in index.html
   let smplr = await import('https://cdn.jsdelivr.net/npm/smplr@1.0.0/dist/index.mjs');
-  instrument = smplr.Soundfont(audio, { instrument: instrumentName });
+  mainSynthInstrument = smplr.Soundfont(audio, { instrument: 'synth_bass_1' });
 
   // there is no await here, so draw() starts straight away and says 'Loading instrument…'
-  instrument.ready.then(function () {
+  mainSynthInstrument.ready.then(function () {
     instrumentReady = true;
 
     if (unlocked) 
@@ -98,6 +99,8 @@ async function setup() {
     loadProblem = 'The instrument did not load. Check the network.';
     console.log(error);
   });
+
+  ambienceInstrument = smplr.Soundfont(audio, { instrument: 'synth_choir' });
 }
 
 function draw() {
@@ -130,7 +133,7 @@ function draw() {
 
   text('Tempo: ' + round(tempo) + ' BPM', 20, 80);
   text('Note: ' + songNotes[currentNote], 20, 102);
-  
+
   drawNotes();
 }
 
@@ -138,7 +141,7 @@ function draw() {
 function playNote(n) {
   if (!instrumentReady) return;
 
-  instrument.start({ note: scaleNotes[n], velocity: velocity });
+  mainSynthInstrument.start({ note: scaleNotes[n], velocity: velocity });
   soundPlayed = true;
 }
 
@@ -224,10 +227,18 @@ function updateSong() {
   if (currentTime >= nextNoteTime) {
 
     // play the current note
-    instrument.start({
+    mainSynthInstrument.start({
       note: songNotes[currentNote],
       velocity: velocity
     });
+
+    if (currentNote % 8 == 1)
+    {
+      ambienceInstrument.start({
+        note: songNotes[currentNote],
+        velocity: 20
+      });
+    }
 
     // timer for the next note
     let beatDuration = 60000 / tempo;
