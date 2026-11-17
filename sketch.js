@@ -5,7 +5,6 @@ if ('audioSession' in navigator) navigator.audioSession.type = 'playback';
 // the browser's own sound system. smplr plays through it.
 let audio = new AudioContext();
 
-
 // ---------- MUSIC SEQUENCER ----------
 
 // C major scale
@@ -59,10 +58,10 @@ function userSetupComplete() {
 // the scale: C major pentatonic, two octaves. five notes to an octave, none of them clash.
 // (it cannot be called scale. p5.js already has a function with that name.)
 let scaleNotes = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6'];
-let instrumentName = 'marimba'; // try 'vibraphone', 'kalimba', 'celesta' or 'acoustic_grand_piano'
-let velocity = 100;             // how hard each note is struck, from 0 to 127
+let instrumentName = 'synth_bass_1';  // try 'vibraphone', 'kalimba', 'celesta' or 'acoustic_grand_piano'
+let velocity = 100;                   // how hard each note is struck, from 0 to 127
 
-let instrument;              // the marimba, from smplr
+let instrument;              // from smplr
 let instrumentReady = false; // true once its recordings have arrived
 let loadProblem = '';
 let position = 0.5;          // from 0 to 1. where the dial points
@@ -110,10 +109,12 @@ function draw() {
     position = raw;
   }
 
-  // 2. map it: the position range onto the notes of the scale
-  let newIndex = constrain(floor(position * scaleNotes.length), 0, scaleNotes.length - 1);
+  // map rotation to tempo
+  // 0 = 80 BPM
+  // 1 = 180 BPM
+  tempo = map(position, 0, 1, 80, 180);
 
-  // 3. use it: a note plays only when the dial moves onto a new one
+  // play the next sequence in the song
   updateSong();
 
   drawDial();
@@ -123,8 +124,13 @@ function draw() {
   fill(255);
   noStroke();
   textSize(16);
+
   text(inputReading(), 20, 30);
   text(inputStatus(), 20, 52);
+
+  text('Tempo: ' + round(tempo) + ' BPM', 20, 80);
+  text('Note: ' + songNotes[currentNote], 20, 102);
+  
   drawNotes();
 }
 
