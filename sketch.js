@@ -284,7 +284,7 @@ function createBeatParticles() {
 
       // Mostly upward, with some sideways movement
       vx: random(-1.5, 1.5) * (position * 2),
-      vy: random(-4, -7),
+      vy: random(height * 0.15, height * 0.9),
 
       gravity: 0.06,
 
