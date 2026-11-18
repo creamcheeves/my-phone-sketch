@@ -5,7 +5,7 @@ if ('audioSession' in navigator) navigator.audioSession.type = 'playback';
 // the browser's own sound system. smplr plays through it.
 let audio = new AudioContext();
 
-// ---------- MUSIC SEQUENCER ----------
+// -- MUSIC SEQUENCER --
 
 // c major scale
 let songNotes = [
@@ -58,14 +58,26 @@ function userSetupComplete() {
 let scaleNotes = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6'];
 let velocity = 50;                   // how hard each note is struck, from 0 to 127
 
-let mainSynthInstrument;      // from smplr
+let mainSynthInstrument;      // from smplr; following instrument-controlled variables operate off of this one
+let ambienceInstrument;
 let instrumentReady = false;  // true once its recordings have arrived
 let loadProblem = '';
 let position = 0.5;           // from 0 to 1. where the dial points
 let noteIndex = -1;           // which note of the scale the dial is on. -1 is none yet
 let soundPlayed = false;      // has any sound played yet?
 
-let ambienceInstrument;
+// -- PARTICLES --
+
+let particles = [];
+
+let particleColors = [
+  '#ff3864',
+  '#ffbd35',
+  '#38e8cf',
+  '#648cff',
+  '#c56bff',
+  '#ffffff'
+];
 
 async function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -105,6 +117,10 @@ async function setup() {
   ambienceInstrument = smplr.Soundfont(audio, { instrument: 'synth_brass_2' });
 }
 
+//  -------------------------
+//  --    DRAW FUNCTION    --
+//  -------------------------
+
 function draw() {
   background(20);
 
@@ -121,8 +137,9 @@ function draw() {
 
   // play the next sequence in the song
   updateSong();
+  updateParticles();
 
-  drawDial();
+  // drawDial();
   drawInput();
 
   // the labels sit in the top 70 pixels, the same in every version
@@ -136,7 +153,7 @@ function draw() {
   text('Tempo: ' + round(tempo) + ' BPM', 20, 80);
   text('Note: ' + songNotes[currentNote], 20, 102);
 
-  drawNotes();
+  // drawNotes();
 }
 
 // strike one note of the scale
@@ -237,14 +254,13 @@ function updateSong() {
       duration: noteDuration * 0.85
     });
 
-    if (true) // currentNote % 8 == 1
-    {
-      ambienceInstrument.start({
-        note: songNotes[currentNote],
-        velocity: 40,
-        duration: noteDuration * 1.5
-      });
-    }
+    ambienceInstrument.start({
+      note: songNotes[currentNote],
+      velocity: 40,
+      duration: noteDuration * 1.5
+    });
+
+    createBeatParticles();
 
     // timer for the next note
     nextNoteTime = currentTime + (beatDuration * songRhythm[currentNote]);
@@ -253,6 +269,78 @@ function updateSong() {
 
     if (currentNote >= songNotes.length) { currentNote = 0; }
   }
+}
+
+function createBeatParticles() {
+  // A few squares per beat
+  let amount = random(2, 5);
+
+  for (let i = 0; i < amount; i++) {
+    particles.push({
+      x: random(width),
+      y: height + random(0, 20),
+
+      size: random(width * 0.02, width * 0.15),
+
+      // Mostly upward, with some sideways movement
+      vx: random(-1.5, 1.5) * (position * 2),
+      vy: random(-4, -7),
+
+      gravity: 0.06,
+
+      rotation: random(360),
+      rotationSpeed: random(-4, 4),
+
+      alpha: 255,
+
+      color: random(particleColors)
+    });
+  }
+}
+
+function updateParticles() {
+  rectMode(CENTER);
+  noStroke();
+
+  for (let i = particles.length - 1; i >= 0; i--) 
+  {
+    let p = particles[i];
+
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += p.gravity;
+    p.rotation += p.rotationSpeed;
+    p.alpha -= 2.5;
+
+    push();
+
+    translate(p.x, p.y);
+    rotate(p.rotation);
+
+    // main square
+    let c = color(p.color);
+    c.setAlpha(max(0, p.alpha));
+
+    fill(c);
+    noStroke();
+    rect(0, 0, p.size, p.size);
+
+    // outline that stays fully visible
+    noFill();
+    stroke(255, 255, 255, 255);
+    strokeWeight(2);
+    rect(0, 0, p.size, p.size);
+
+    pop();
+
+    // remove faded particles
+    if (p.alpha <= 0 || p.y > height + 30) 
+    {
+      particles.splice(i, 1);
+    }
+  }
+
+  rectMode(CORNER);
 }
 
 function windowResized() {
