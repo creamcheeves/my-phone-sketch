@@ -7,33 +7,33 @@ let audio = new AudioContext();
 
 // -- MUSIC SEQUENCER --
 
-// c major scale
+// c minor pentatonic scale
 let songNotes = [
-  'C5', 'E5', 'G5', 'E5',
-  'A5', 'G5', 'E5', 'D5',
+  'C4', 'Eb4', 'G4', 'Eb4',
+  'C4', 'G3', 'Bb3', 'G3',
 
-  'C5', 'E5', 'G5', 'A5',
-  'C6', 'A5', 'G5', 'E5',
+  'C4', 'Eb4', 'F4', 'G4',
+  'Bb4', 'G4', 'F4', 'Eb4',
 
-  'D5', 'G5', 'A5', 'G5',
-  'E5', 'D5', 'C5', 'D5',
+  'C4', 'Eb4', 'G4', 'C5',
+  'Bb4', 'G4', 'Eb4', 'C4',
 
-  'E5', 'G5', 'A5', 'C6',
-  'A5', 'G5', 'E5', 'C5'
+  'G3', 'Bb3', 'C4', 'Eb4',
+  'F4', 'Eb4', 'C4', 'G3'
 ];
 
 // rhythm is the delay following the note that plays from the above array
 let songRhythm = [
-  0.5, 0.5, 0.5, 2,
-  0.5, 2, 1, 1,
+  0.5, 0.5, 0.5, 3,
+  2, 0.5, 0.5, 2,
 
-  0.5, 0.5, 1, 1,
+  1, 1, 1, 1,
   1, 0.5, 0.5, 1,
 
-  0.5, 0.5, 0.5, 2,
-  0.5, 2, 1, 1,
+  0.5, 0.5, 0.5, 3,
+  2, 0.5, 0.5, 2,
 
-  0.5, 0.5, 1, 1,
+  1, 1, 1, 1,
   1, 0.5, 0.5, 1,
 ];
 
@@ -52,10 +52,7 @@ function userSetupComplete() {
   }
 }
 
-// the feel of the piece. change these before you change anything else.
-// the scale: C major pentatonic, two octaves. five notes to an octave, none of them clash.
-// (it cannot be called scale. p5.js already has a function with that name.)
-let scaleNotes = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6'];
+let scaleNotes = ['C3', 'Eb3', 'F3', 'G3', 'Bb3', 'C4', 'Eb4', 'F4', 'G4', 'Bb4', 'C5'];
 let velocity = 50;                   // how hard each note is struck, from 0 to 127
 
 let mainSynthInstrument;      // from smplr; following instrument-controlled variables operate off of this one
@@ -70,6 +67,7 @@ let soundPlayed = false;      // has any sound played yet?
 
 let particles = [];
 
+// limit color palette for retro-eqsue vibe additions
 let particleColors = [
   '#ff3864',
   '#ffbd35',
@@ -256,7 +254,7 @@ function updateSong() {
 
     ambienceInstrument.start({
       note: songNotes[currentNote],
-      velocity: 40,
+      velocity: 60,
       duration: noteDuration * 1.5
     });
 
@@ -284,7 +282,7 @@ function createBeatParticles() {
 
       // Mostly upward, with some sideways movement
       vx: random(-1.5, 1.5) * (position * 2),
-      vy: random(height * 0.15, height * 0.9),
+      vy: random(-4, -7) * (position * 2),
 
       gravity: 0.06,
 
