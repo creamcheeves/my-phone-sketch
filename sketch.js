@@ -123,7 +123,7 @@ async function setup() {
     host: SHARE_HOST,
     room: 'a1-anvil',
     app: 'phlever',
-    me: { timeInSketch: 0, role: "listener" }
+    me: { timeInSketch: 0, role: "listener", value: 0 }
   });
 }
 
@@ -135,10 +135,33 @@ function draw() {
   background(20);
   const everyone = [me].concat(guests);
 
-  // 1. read the input: where the dial points, from 0 to 1. -1 means no new reading
+  // read the input: where the dial points, from 0 to 1. -1 means no new reading
   let raw = readPosition();
   if (raw >= 0) {
-    position = raw;
+    me.value = raw;
+  }
+
+  // determine if you are the conductor
+  me.role = "conductor";
+  for (let i = 0; i < everyone.length; i++)
+  {
+    const person = everyone[i];
+
+    if (person != me && person.timeInSketch > me.timeInSketch)
+    {
+      me.role = "listener";
+    }
+  }
+
+  // conductor's position is the one that matters
+  for (let i = 0; i < everyone.length; i++)
+  {
+    const person = everyone[i];
+
+    if (person.role == "conductor")
+    {
+      position = person.value;
+    }
   }
 
   // map rotation to tempo
@@ -179,6 +202,8 @@ function draw() {
 
     textY += 22;
   }
+
+  me.timeInSketch = millis();
 }
 
 // play one note
