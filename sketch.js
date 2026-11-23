@@ -1,87 +1,349 @@
-// One Number
-// The smallest Share sketch. Every phone in the room sends one number: how many times
-// it has been tapped. Every phone shows everyone's number in a grid.
-// Tap the screen (or click, on a laptop) to count up.
-//
-// Your room: change ROOM to the room you were given. Phones with the same ROOM meet.
+// H7: ask the phone to treat this page like a music player, so silent mode may not mute it.
+// Not tested on a phone yet. If it changes nothing, delete this line.
+if ('audioSession' in navigator) navigator.audioSession.type = 'playback';
+
+// the browser's sound system. smplr plays through it.
+let audio = new AudioContext();
+
+// -- MUSIC SEQUENCER --
+
+// c minor pentatonic scale
+let scaleNotes = ['C3', 'Eb3', 'F3', 'G3', 'Bb3', 'C4', 'Eb4', 'F4', 'G4', 'Bb4', 'C5'];
+
+let songNotes = [
+  'C4', 'Eb4', 'G4', 'Eb4',
+  'C4', 'G3', 'Bb3', 'G3',
+
+  'C4', 'Eb4', 'F4', 'G4',
+  'Bb4', 'G4', 'F4', 'Eb4',
+
+  'C4', 'Eb4', 'G4', 'C5',
+  'Bb4', 'G4', 'Eb4', 'C4',
+
+  'G3', 'Bb3', 'C4', 'Eb4',
+  'F4', 'Eb4', 'C4', 'G3'
+];
+
+// rhythm is the delay following the note that plays from the above array
+let songRhythm = [
+  0.5, 0.5, 0.5, 3,
+  2, 0.5, 0.5, 2,
+
+  1, 1, 1, 1,
+  1, 0.5, 0.5, 1,
+
+  0.5, 0.5, 0.5, 3,
+  2, 0.5, 0.5, 2,
+
+  1, 1, 1, 2,
+  1, 0.5, 0.5, 1,
+];
+
+let tempo = 120; // bpm
+let currentNote = 0;
+let nextNoteTime = 0;
+
+// phones only start sound inside a tap. p5-phone's tap message starts this sound system
+// right there (it starts any AudioContext the sketch makes), then calls userSetupComplete().
+let unlocked = false; // has the tap turned the sound on?
+function userSetupComplete() {
+  unlocked = true;
+
+  if (instrumentReady) {
+    startSong();
+  }
+}
+
+let velocity = 50;                   // how hard each note is struck, from 0 to 127
+
+let mainSynthInstrument;      // from smplr; following instrument-controlled variables operate off of this one
+let ambienceInstrument;
+let instrumentReady = false;  // true once its recordings have arrived
+let loadProblem = '';
+let position = 0.5;           // from 0 to 1. where the dial points
+let noteIndex = -1;           // which note of the scale the dial is on. -1 is none yet
+let soundPlayed = false;      // has any sound played yet?
+
+// -- PARTICLES --
+
+let particles = [];
+
+// limit color palette for retro-eqsue vibe additions
+let particleColors = [
+  '#ff3864',
+  '#ffbd35',
+  '#38e8cf',
+  '#648cff',
+  '#c56bff',
+  '#ffffff'
+];
 
 const SHARE_HOST = 'https://p5-phone-share.npuckett.workers.dev';   // the class server
-const ROOM = 'a1-anvil';    // your room
 
-function setup() {
+async function setup() {
   createCanvas(windowWidth, windowHeight);
-  textAlign(CENTER, CENTER);
-  textFont('system-ui');
+  lockGestures();
 
-  // 1. Which server, which room, which sketch, and what this phone sends.
-  //    me is what this phone sends. Here it is one number, starting at 0.
-  shareSetup({
-    host: SHARE_HOST,
-    room: ROOM,
-    app: 'one-number',
-    me: { number: 0 }
+  // on a laptop, show a QR code of this page so you can open it on your phone.
+  // it only shows on a public https address, like the examples site.
+  // in the web editor or on 127.0.0.1 the address would not open on a phone.
+  if (location.protocol === 'https:' && window.self === window.top) {
+    showDesktopQr();
+  }
+
+  angleMode(DEGREES);
+  setupInput();
+
+  // -- MUSIC SETUP --
+  let smplr = await import('https://cdn.jsdelivr.net/npm/smplr@1.0.0/dist/index.mjs');
+
+  // -- MAIN INSTRUMENT SETUP --
+  mainSynthInstrument = smplr.Soundfont(audio, { instrument: 'lead_3_calliope' });
+
+  // there is no await here, so draw() starts straight away and says 'Loading instrument…'
+  mainSynthInstrument.ready.then(function () {
+    instrumentReady = true;
+
+    if (unlocked) 
+      {
+        startSong();
+      }
+  }).catch(function (error) {
+    loadProblem = 'The instrument did not load. Check the network.';
+    console.log(error);
   });
 
-  // 2. A tap joins the room. A phone only joins after a tap.
-  enablePermissionsTap(['share'], 'Tap to join');
-  showDesktopQr();   // on a laptop: a QR code, so a phone can join
+  // -- OTHER INSTRUMENT SETUP --
+  // -- instrument options at https://cdn.jsdelivr.net/npm/smplr@1.0.0/dist/index.mjs -- 
+  ambienceInstrument = smplr.Soundfont(audio, { instrument: 'synth_strings_1' });
+
+  
+  // -- SERVER SETUP --
+  shareSetup({
+    host: SHARE_HOST,
+    room: 'a1-anvil',
+    app: 'phlever',
+    me: { timeInSketch: 0 }
+  });
 }
+
+//  -------------------------
+//  --    DRAW FUNCTION    --
+//  -------------------------
 
 function draw() {
   background(20);
-
-  // 3. guests is everyone else in the room. Each guest has the same names as my me,
-  //    so guests[0].number is the first other phone's number.
-  //    guestsWith('number') leaves out pages that send no number, like the Room Inspector.
   const everyone = [me].concat(guestsWith('number'));
 
-  // one cell for each person, in a grid that fits the screen
-  const cols = ceil(sqrt(everyone.length * width / height));
-  const rows = ceil(everyone.length / cols);
-  const w = width / cols;
-  const h = (height - 60) / rows;
-  for (let i = 0; i < everyone.length; i++) {
+  // 1. read the input: where the dial points, from 0 to 1. -1 means no new reading
+  let raw = readPosition();
+  if (raw >= 0) {
+    position = raw;
+  }
+
+  // map rotation to tempo
+  // 0 = 80 BPM
+  // 1 = 180 BPM
+  tempo = map(position, 0, 1, 80, 180);
+
+  // play the next sequence in the song
+  updateSong();
+  updateParticles();
+
+  // the labels sit in the top 70 pixels, the same in every version
+  fill(255);
+  noStroke();
+  textSize(16);
+
+  text(inputReading(), 20, 30);
+  text(inputStatus(), 20, 52);
+
+  text('Tempo: ' + round(tempo) + ' BPM', 20, 80);
+  text('Note: ' + songNotes[currentNote], 20, 102);
+  
+  let textY = 124;
+
+  // write all of the people in the room
+  for (let i = 0; i < everyone.length; i++)
+  {
     const person = everyone[i];
-    const x = (i % cols) * w;
-    const y = floor(i / cols) * h;
 
-    // a box round each cell. yours is brighter
-    noFill();
-    stroke(person === me ? 200 : 60);
-    rect(x + 6, y + 6, w - 12, h - 12);
+    if (person === me)
+    {
+      text("me: " + (shareClientId || '').slice(0, 4), 20, textY);
+    }
+    else
+    {
+      text("other: " + person.id.slice(0, 4), 20, textY);
+    }
+
+    textY += 22;
+  }
+}
+
+// strike one note of the scale
+function playNote(n) {
+  if (!instrumentReady) return;
+
+  mainSynthInstrument.start({ note: scaleNotes[n], velocity: velocity });
+  soundPlayed = true;
+}
+
+// start the song
+function startSong() {
+  currentNote = 0;
+  nextNoteTime = millis();
+}
+
+// update and play the song
+function updateSong() {
+  if (!unlocked || !instrumentReady) return;
+
+  let currentTime = millis();
+
+  if (currentTime >= nextNoteTime) {
+    let beatDuration = 60000 / tempo;
+    let noteDuration = (beatDuration * songRhythm[currentNote]) / 1000;
+
+    // play the current note
+    mainSynthInstrument.start({
+      note: songNotes[currentNote],
+      velocity: velocity,
+      duration: noteDuration * 0.85
+    });
+
+    ambienceInstrument.start({
+      note: songNotes[currentNote],
+      velocity: 25,
+      duration: noteDuration * 2
+    });
+
+    createBeatParticles();
+
+    // timer for the next note
+    nextNoteTime = currentTime + (beatDuration * songRhythm[currentNote]);
+
+    currentNote++;
+
+    if (currentNote >= songNotes.length) { currentNote = 0; }
+  }
+}
+
+function createBeatParticles() {
+  // A few squares per beat
+  let amount = random(2, 5);
+
+  for (let i = 0; i < amount; i++) {
+    particles.push({
+      x: random(width),
+      y: height + random(0, 20),
+
+      size: random(width * 0.02, width * 0.15),
+
+      // Mostly upward, with some sideways movement
+      vx: random(-1.5, 1.5) * (position * 2),
+      vy: random(-4, -7) * (position * 2),
+
+      gravity: 0.06,
+
+      rotation: random(360),
+      rotationSpeed: random(-4, 4),
+
+      alpha: 255,
+
+      color: random(particleColors)
+    });
+  }
+}
+
+function updateParticles() {
+  rectMode(CENTER);
+  noStroke();
+
+  for (let i = particles.length - 1; i >= 0; i--) 
+  {
+    let p = particles[i];
+
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += p.gravity;
+    p.rotation += p.rotationSpeed;
+    p.alpha -= 2.5;
+
+    push();
+
+    translate(p.x, p.y);
+    rotate(p.rotation);
+
+    // main square
+    let c = color(p.color);
+    c.setAlpha(max(0, p.alpha));
+
+    fill(c);
     noStroke();
+    rect(0, 0, p.size, p.size);
 
-    // the number: how many times this person has tapped
-    fill(255);
-    textSize(min(w, h) * 0.4);
-    text(person.number, x + w / 2, y + h * 0.45);
+    // outline that stays fully visible
+    noFill();
+    stroke(255, 255, 255, 255);
+    strokeWeight(2);
+    rect(0, 0, p.size, p.size);
 
-    // under it, who it is: the id the room gave that phone when it joined.
-    // your own box says me, with your id under it: the id everyone else sees for you
-    fill(150);
-    textSize(min(w, h) * 0.1);
-    if (person === me) {
-      text('me', x + w / 2, y + h * 0.72);
-      textSize(min(w, h) * 0.07);
-      text((shareClientId || '').slice(0, 4), x + w / 2, y + h * 0.84);
-    } else {
-      text(person.id.slice(0, 4), x + w / 2, y + h * 0.78);
+    pop();
+
+    // remove faded particles
+    if (p.alpha <= 0 || p.y > height + 30) 
+    {
+      particles.splice(i, 1);
     }
   }
 
-  // one line about the connection
-  fill(150);
-  textSize(16);
-  text(shareStatusText(), width / 2, height - 30);
-}
-
-function mousePressed() {
-  if (!shareConnected) return;   // the tap that joins the room does not count
-
-  // 4. Change me, and p5-phone sends it. Every other phone sees your number go up.
-  me.number = me.number + 1;
+  rectMode(CORNER);
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+}
+
+// ---------- the input: motion. this is the only part that changes between versions. ----------
+// From the p5-phone Orientation Basic example.
+// rotationX is how far the phone has flipped when held in portrait mode, from -180 to 180 degrees. For the upper half of the arc, which is all that matters for this project, it runs from 0 to 180.
+// Pulling it toward you (screen facing you) increases the rotation.
+
+let findings = ['A full turn runs through the scale. Past 360 it jumps back to the bottom.'];
+
+// a laptop has no motion sensors. this turns true when the first real reading arrives.
+let motionArrived = false;
+window.addEventListener('devicemotion', function (event) {
+  let g = event.accelerationIncludingGravity;
+  if (g && g.x !== null) {
+    motionArrived = true;
+  }
+});
+
+function setupInput() {
+  // angleMode(DEGREES) is already on, in setup()
+  enablePermissionsTap(['motion', 'sound', 'share'], 'Tap to turn on motion and sound');
+}
+
+// where the phone points the dial, from 0 to 1. -1 if there are no motion readings
+function readPosition() {
+  if (!window.sensorsEnabled || !motionArrived) return -1;
+
+  // convert the phone's rotation into a value usable by the program
+  return constrain((180 - rotationX) / 180, -1, 1);
+}
+
+function inputReading() {
+  return 'turn: ' + round(rotationX) + '°';
+}
+
+function inputStatus() {
+  if (!window.sensorsEnabled) {
+    return 'tap to turn on motion and sound';
+  }
+  if (!motionArrived) {
+    return 'no motion sensors here. on a laptop, open this on a phone';
+  }
+  return 'lay the phone flat and turn it like a dial';
 }
