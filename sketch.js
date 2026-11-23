@@ -123,7 +123,7 @@ async function setup() {
     host: SHARE_HOST,
     room: 'a1-anvil',
     app: 'phlever',
-    me: { timeInSketch: 0 }
+    me: { timeInSketch: 0, role: "listener" }
   });
 }
 
@@ -133,7 +133,7 @@ async function setup() {
 
 function draw() {
   background(20);
-  const everyone = [me].concat(guestsWith('number'));
+  const everyone = [me].concat(guests);
 
   // 1. read the input: where the dial points, from 0 to 1. -1 means no new reading
   let raw = readPosition();
@@ -159,7 +159,7 @@ function draw() {
   text(inputStatus(), 20, 52);
 
   text('Tempo: ' + round(tempo) + ' BPM', 20, 80);
-  text('Note: ' + songNotes[currentNote], 20, 102);
+  text('everyone.length: ' + everyone.length, 20, 102);
   
   let textY = 124;
 
@@ -170,18 +170,18 @@ function draw() {
 
     if (person === me)
     {
-      text("me: " + (shareClientId || '').slice(0, 4), 20, textY);
+      text("me: " + (shareClientId || '').slice(0, 4) + "'s role: " + person.role, 20, textY);
     }
     else
     {
-      text("other: " + person.id.slice(0, 4), 20, textY);
+      text("other: " + person.id.slice(0, 4) + "'s role: " + person.role, 20, textY);
     }
 
     textY += 22;
   }
 }
 
-// strike one note of the scale
+// play one note
 function playNote(n) {
   if (!instrumentReady) return;
 
