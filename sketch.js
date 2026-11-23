@@ -204,6 +204,12 @@ function draw() {
   }
 
   me.timeInSketch = millis();
+
+  // outside border
+  noFill();
+  stroke(255);
+  strokeWeight(4);
+  rect(2, 2, width - 4, height - 4);
 }
 
 // play one note
