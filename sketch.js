@@ -6,7 +6,7 @@
 // Your room: change ROOM to the room you were given. Phones with the same ROOM meet.
 
 const SHARE_HOST = 'https://p5-phone-share.npuckett.workers.dev';   // the class server
-const ROOM = 'class';    // your room
+const ROOM = 'a1-anvil';    // your room
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
