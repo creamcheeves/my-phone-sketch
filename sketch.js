@@ -2,12 +2,14 @@
 // Not tested on a phone yet. If it changes nothing, delete this line.
 if ('audioSession' in navigator) navigator.audioSession.type = 'playback';
 
-// the browser's own sound system. smplr plays through it.
+// the browser's sound system. smplr plays through it.
 let audio = new AudioContext();
 
 // -- MUSIC SEQUENCER --
 
 // c minor pentatonic scale
+let scaleNotes = ['C3', 'Eb3', 'F3', 'G3', 'Bb3', 'C4', 'Eb4', 'F4', 'G4', 'Bb4', 'C5'];
+
 let songNotes = [
   'C4', 'Eb4', 'G4', 'Eb4',
   'C4', 'G3', 'Bb3', 'G3',
@@ -33,7 +35,7 @@ let songRhythm = [
   0.5, 0.5, 0.5, 3,
   2, 0.5, 0.5, 2,
 
-  1, 1, 1, 1,
+  1, 1, 1, 2,
   1, 0.5, 0.5, 1,
 ];
 
@@ -52,7 +54,6 @@ function userSetupComplete() {
   }
 }
 
-let scaleNotes = ['C3', 'Eb3', 'F3', 'G3', 'Bb3', 'C4', 'Eb4', 'F4', 'G4', 'Bb4', 'C5'];
 let velocity = 50;                   // how hard each note is struck, from 0 to 127
 
 let mainSynthInstrument;      // from smplr; following instrument-controlled variables operate off of this one
@@ -77,6 +78,8 @@ let particleColors = [
   '#ffffff'
 ];
 
+const SHARE_HOST = 'https://p5-phone-share.npuckett.workers.dev';   // the class server
+
 async function setup() {
   createCanvas(windowWidth, windowHeight);
   lockGestures();
@@ -91,7 +94,7 @@ async function setup() {
   angleMode(DEGREES);
   setupInput();
 
-  // smplr is a newer kind of library, a module, so it is loaded here and not in index.html
+  // -- MUSIC SETUP --
   let smplr = await import('https://cdn.jsdelivr.net/npm/smplr@1.0.0/dist/index.mjs');
 
   // -- MAIN INSTRUMENT SETUP --
@@ -112,7 +115,17 @@ async function setup() {
 
   // -- OTHER INSTRUMENT SETUP --
   // -- instrument options at https://cdn.jsdelivr.net/npm/smplr@1.0.0/dist/index.mjs -- 
-  ambienceInstrument = smplr.Soundfont(audio, { instrument: 'synth_brass_2' });
+  ambienceInstrument = smplr.Soundfont(audio, { instrument: 'synth_strings_1' });
+
+  
+
+  // -- SERVER SETUP --
+  shareSetup({
+    host: SHARE_HOST,
+    room: a1-anvil,
+    app: 'phlever',
+    me: { timeInSketch: 0 }
+  });
 }
 
 //  -------------------------
@@ -162,73 +175,6 @@ function playNote(n) {
   soundPlayed = true;
 }
 
-// the dial. the scale runs around it, low on the left, high on the right.
-function drawDial() {
-  let cx = width / 2;
-  let cy = 70 + (height - 70 - 90) / 2;
-  let r = min(width, height - 160) * 0.38;
-
-  // each note of the scale has a mark. the one playing is lit.
-  textAlign(CENTER, CENTER);
-  textSize(12);
-  for (let i = 0; i < scaleNotes.length; i++) {
-    let a = map(i + 0.5, 0, scaleNotes.length, -135, 135);
-    let x = cx + r * sin(a);
-    let y = cy - r * cos(a);
-    noStroke();
-    if (i === noteIndex) {
-      fill(255, 200, 0);
-      circle(x, y, 30);
-      fill(20);
-    } else {
-      fill(60);
-      circle(x, y, 30);
-      fill(200);
-    }
-    text(scaleNotes[i], x, y);
-  }
-
-  // the pointer
-  let pointer = map(position, 0, 1, -135, 135);
-  stroke(255);
-  strokeWeight(4);
-  line(cx, cy, cx + r * 0.75 * sin(pointer), cy - r * 0.75 * cos(pointer));
-  noStroke();
-  fill(255);
-  circle(cx, cy, 14);
-
-  textSize(40);
-  if (loadProblem !== '') {
-    textSize(16);
-    text(loadProblem, cx, cy + r * 0.45);
-  } else if (!instrumentReady) {
-    textSize(20);
-    text('Loading instrument…', cx, cy + r * 0.45);
-  } else if (noteIndex >= 0) {
-    text(scaleNotes[noteIndex], cx, cy + r * 0.45);
-  }
-  textAlign(LEFT, BASELINE);
-}
-
-// the notes along the bottom. the input part adds its own lines.
-function drawNotes() {
-  let lines = findings.slice(); // a copy, so the list below can grow
-
-  // H6, H8: until the first sound plays, say what usually silences a phone
-  if (!soundPlayed) {
-    lines.push('No sound? Check silent mode.');
-  }
-
-  fill(160);
-  noStroke();
-  textSize(13);
-  let y = height - 12;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    text(lines[i], 20, y);
-    y = y - 18;
-  }
-}
-
 // start the song
 function startSong() {
   currentNote = 0;
@@ -254,8 +200,8 @@ function updateSong() {
 
     ambienceInstrument.start({
       note: songNotes[currentNote],
-      velocity: 60,
-      duration: noteDuration * 1.5
+      velocity: 25,
+      duration: noteDuration * 2
     });
 
     createBeatParticles();
@@ -363,7 +309,7 @@ window.addEventListener('devicemotion', function (event) {
 
 function setupInput() {
   // angleMode(DEGREES) is already on, in setup()
-  enablePermissionsTap(['motion', 'sound'], 'Tap to turn on motion and sound');
+  enablePermissionsTap(['motion', 'sound', 'share'], 'Tap to turn on motion and sound');
 }
 
 // where the phone points the dial, from 0 to 1. -1 if there are no motion readings
