@@ -83,6 +83,8 @@ let particleColors = [
   '#ffffff'
 ];
 
+let titleColor = '#ffffff';
+
 const SHARE_HOST = 'https://p5-phone-share.npuckett.workers.dev';   // the class server
 
 async function setup() {
@@ -173,6 +175,7 @@ function draw() {
   }
 
   // conductor's position is the one that matters for bpm
+  let isConductor = false;
   for (let i = 0; i < everyone.length; i++)
   {
     const person = everyone[i];
@@ -180,10 +183,16 @@ function draw() {
     if (person.role == "conductor")
     {
       position = person.value;
+      isConductor = true;
     }
+  }
+  if (!isConductor)
+  {
+    position = 0.5;
   }
 
   // ambient director's position is the one that matters for ambience volume
+  let isAmbienceDirector = false;
   for (let i = 0; i < everyone.length; i++)
   {
     const person = everyone[i];
@@ -191,7 +200,12 @@ function draw() {
     if (person.role == "ambience director")
     {
       ambiencePosition = person.value;
+      isAmbienceDirector = true;
     }
+  }
+  if (!isAmbienceDirector)
+  {
+    ambiencePosition = 0.5;
   }
 
   // map rotation to values
@@ -206,19 +220,46 @@ function draw() {
   updateSong();
   updateParticles();
 
-  // the labels sit in the top 70 pixels, the same in every version
+  // outside border
+  noFill();
+  stroke(255);
+  strokeWeight(4);
+  rect(2, 2, width - 4, height - 4);
+
+  // title
+  strokeWeight(height * 0.01);
+  textSize(height * 0.08);
+  textAlign(CENTER, CENTER);
+  fill(titleColor);
+  text('Phlever', width / 2, height * 0.1);
+
+  showDesktopQr();
+
+  // text for instructions
   fill(255);
+  textAlign(LEFT, TOP);
   noStroke();
   textSize(16);
 
   text(inputStatus(), 20, 30);
 
+  // update your time in sketch value
+  me.timeInSketch = millis();
+  if (!motionArrived) {
+    // only allow people who have readings to become a conductor
+    me.timeInSketch = 0;
+  }
+
+  let doDebugging = false;
+  if (!doDebugging) return;
+
   // -- DEBUGGING INFORMATION, NOT SHOWN ON FINAL VERSION --
   text("debugging!", 20, 58);
   text(inputReading(), 20, 80);
   text('Tempo: ' + round(tempo) + ' BPM', 20, 102);
+  text("Ambience volume: " + round(ambienceVelocity), 20, 124);
   
-  let textY = 124;
+  let textY = 146;
 
   // write all of the people in the room
   for (let i = 0; i < everyone.length; i++)
@@ -236,21 +277,6 @@ function draw() {
 
     textY += 22;
   }
-
-  // update your time in sketch value
-  me.timeInSketch = millis();
-  if (!motionArrived) {
-    // only allow people who have readings to become a conductor
-    me.timeInSketch = 0;
-  }
-
-  // outside border
-  noFill();
-  stroke(255);
-  strokeWeight(4);
-  rect(2, 2, width - 4, height - 4);
-
-  showDesktopQr();
 }
 
 // play one note
@@ -291,6 +317,7 @@ function updateSong() {
     });
 
     createBeatParticles();
+    titleColor = random(particleColors);
 
     // timer for the next note
     nextNoteTime = currentTime + (beatDuration * songRhythm[currentNote]);
@@ -415,7 +442,7 @@ function inputStatus() {
   }
 
   if (!motionArrived) {
-    return 'No motion sensors here. on a laptop, open this on a phone';
+    return 'No motion sensors detected. Phlever requires rotational input!';
   }
 
   return 'Set the bottom of your phone on a surface in portrait mode, then push or pull it from the top as though it were a lever.';
