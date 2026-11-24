@@ -36,7 +36,7 @@ let songRhythm = [
   2, 0.5, 0.5, 2,
 
   1, 1, 1, 2,
-  1, 0.5, 0.5, 1,
+  1, 0.5, 0.5, 1
 ];
 
 let tempo = 120; // bpm
@@ -88,7 +88,7 @@ async function setup() {
   // it only shows on a public https address, like the examples site.
   // in the web editor or on 127.0.0.1 the address would not open on a phone.
   if (location.protocol === 'https:' && window.self === window.top) {
-    showDesktopQr();
+    // showDesktopQr();
   }
 
   angleMode(DEGREES);
@@ -182,9 +182,8 @@ function draw() {
   text(inputStatus(), 20, 52);
 
   text('Tempo: ' + round(tempo) + ' BPM', 20, 80);
-  text('everyone.length: ' + everyone.length, 20, 102);
   
-  let textY = 124;
+  let textY = 102;
 
   // write all of the people in the room
   for (let i = 0; i < everyone.length; i++)
@@ -210,6 +209,8 @@ function draw() {
   stroke(255);
   strokeWeight(4);
   rect(2, 2, width - 4, height - 4);
+
+  showDesktopQr();
 }
 
 // play one note
