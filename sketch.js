@@ -143,15 +143,25 @@ function draw() {
   }
 
   // determine if you are the conductor
-  me.role = "conductor";
+  let greaterThanMe = 0;
   for (let i = 0; i < everyone.length; i++)
   {
     const person = everyone[i];
 
     if (person != me && person.timeInSketch > me.timeInSketch)
     {
-      me.role = "listener";
+      greaterThanMe++;
     }
+  }
+  
+  // role assignment based on queue
+  if (greaterThanMe == 0)
+  {
+    me.role = "conductor";
+  }
+  if (me.timeInSketch == 0)
+  {
+    me.role = "listener";
   }
 
   // conductor's position is the one that matters
@@ -207,6 +217,10 @@ function draw() {
 
   // update your time in sketch value
   me.timeInSketch = millis();
+  if (!motionArrived) {
+    // only allow people who have readings to become a conductor
+    me.timeInSketch = 0;
+  }
 
   // outside border
   noFill();
