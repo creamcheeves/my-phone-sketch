@@ -237,11 +237,11 @@ function draw() {
 
   // text for instructions
   fill(255);
-  textAlign(LEFT, TOP);
+  textAlign(CENTER, CENTER);
   noStroke();
   textSize(16);
 
-  text(inputStatus(), 20, 30);
+  text(inputStatus(), width / 2, height * 0.1 + height * 0.08);
 
   // update your time in sketch value
   me.timeInSketch = millis();
