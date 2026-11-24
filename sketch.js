@@ -42,6 +42,9 @@ let songRhythm = [
 let tempo = 120; // bpm
 let tempoMin = 50;
 let tempoMax = 240;
+let ambienceVelocity = 25;
+let ambienceMin = 0;
+let ambienceMax = 60;
 let currentNote = 0;
 let nextNoteTime = 0;
 
@@ -63,6 +66,7 @@ let ambienceInstrument;
 let instrumentReady = false;  // true once its recordings have arrived
 let loadProblem = '';
 let position = 0.5;           // from 0 to 1, current scale of bpm
+let ambiencePosition = 0.5;   // from 0 to 1, current scale of ambience volume
 let soundPlayed = false;      // has any sound played yet?
 
 // -- PARTICLES --
@@ -159,12 +163,16 @@ function draw() {
   {
     me.role = "conductor";
   }
+  if (greaterThanMe == 1)
+  {
+    me.role = "ambience director";
+  }
   if (me.timeInSketch == 0)
   {
     me.role = "listener";
   }
 
-  // conductor's position is the one that matters
+  // conductor's position is the one that matters for bpm
   for (let i = 0; i < everyone.length; i++)
   {
     const person = everyone[i];
@@ -175,10 +183,24 @@ function draw() {
     }
   }
 
-  // map rotation to tempo
+  // ambient director's position is the one that matters for ambience volume
+  for (let i = 0; i < everyone.length; i++)
+  {
+    const person = everyone[i];
+
+    if (person.role == "ambience director")
+    {
+      ambiencePosition = person.value;
+    }
+  }
+
+  // map rotation to values
   // 0 = 80 BPM
   // 1 = 180 BPM
   tempo = map(position, 0, 1, tempoMin, tempoMax);
+  // 0 = 0 velocity
+  // 1 = 60 velocity
+  ambienceVelocity = map(ambiencePosition, 0, 1, ambienceMin, ambienceMax);
 
   // play the next sequence in the song
   updateSong();
@@ -264,7 +286,7 @@ function updateSong() {
 
     ambienceInstrument.start({
       note: songNotes[currentNote],
-      velocity: 25,
+      velocity: ambienceVelocity,
       duration: noteDuration * 2
     });
 
@@ -396,7 +418,7 @@ function inputStatus() {
     return 'No motion sensors here. on a laptop, open this on a phone';
   }
 
-  return 'Set your phone on a surface in portrait mode, then push or pull it as though it were a lever.';
+  return 'Set the bottom of your phone on a surface in portrait mode, then push or pull it from the top as though it were a lever.';
 }
 
 function roleDescription() 
@@ -408,5 +430,9 @@ function roleDescription()
   if (me.role == "conductor")
   {
     return "You are the conductor. You control the tempo of the music with your Phlever.";
+  }
+  if (me.role == "ambience director")
+  {
+    return "You are the ambience director. You control the volume of the ambient sound with your Phlever.";
   }
 }
