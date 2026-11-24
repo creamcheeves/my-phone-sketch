@@ -40,6 +40,8 @@ let songRhythm = [
 ];
 
 let tempo = 120; // bpm
+let tempoMin = 50;
+let tempoMax = 240;
 let currentNote = 0;
 let nextNoteTime = 0;
 
@@ -60,8 +62,7 @@ let mainSynthInstrument;      // from smplr; following instrument-controlled var
 let ambienceInstrument;
 let instrumentReady = false;  // true once its recordings have arrived
 let loadProblem = '';
-let position = 0.5;           // from 0 to 1. where the dial points
-let noteIndex = -1;           // which note of the scale the dial is on. -1 is none yet
+let position = 0.5;           // from 0 to 1, current scale of bpm
 let soundPlayed = false;      // has any sound played yet?
 
 // -- PARTICLES --
@@ -167,7 +168,7 @@ function draw() {
   // map rotation to tempo
   // 0 = 80 BPM
   // 1 = 180 BPM
-  tempo = map(position, 0, 1, 80, 180);
+  tempo = map(position, 0, 1, tempoMin, tempoMax);
 
   // play the next sequence in the song
   updateSong();
@@ -178,12 +179,14 @@ function draw() {
   noStroke();
   textSize(16);
 
-  text(inputReading(), 20, 30);
-  text(inputStatus(), 20, 52);
+  text(inputStatus(), 20, 30);
 
-  text('Tempo: ' + round(tempo) + ' BPM', 20, 80);
+  // -- DEBUGGING INFORMATION, NOT SHOWN ON FINAL VERSION --
+  text("debugging!", 20, 58);
+  text(inputReading(), 20, 80);
+  text('Tempo: ' + round(tempo) + ' BPM', 20, 102);
   
-  let textY = 102;
+  let textY = 124;
 
   // write all of the people in the room
   for (let i = 0; i < everyone.length; i++)
@@ -202,6 +205,7 @@ function draw() {
     textY += 22;
   }
 
+  // update your time in sketch value
   me.timeInSketch = millis();
 
   // outside border
@@ -358,7 +362,6 @@ function setupInput() {
   enablePermissionsTap(['motion', 'sound', 'share'], 'Tap to turn on motion and sound');
 }
 
-// where the phone points the dial, from 0 to 1. -1 if there are no motion readings
 function readPosition() {
   if (!window.sensorsEnabled || !motionArrived) return -1;
 
@@ -367,15 +370,29 @@ function readPosition() {
 }
 
 function inputReading() {
-  return 'turn: ' + round(rotationX) + '°';
+  return 'Turn: ' + round(rotationX) + '°';
 }
 
 function inputStatus() {
   if (!window.sensorsEnabled) {
-    return 'tap to turn on motion and sound';
+    return 'Tap to turn on motion and sound';
   }
+
   if (!motionArrived) {
-    return 'no motion sensors here. on a laptop, open this on a phone';
+    return 'No motion sensors here. on a laptop, open this on a phone';
   }
-  return 'lay the phone flat and turn it like a dial';
+
+  return 'Set your phone on a surface in portrait mode, then push or pull it as though it were a lever.';
+}
+
+function roleDescription() 
+{
+  if (me.role == "listener")
+  {
+    return "You are a listener. Enjoy the show, or wait for your turn as conductor!";
+  }
+  if (me.role == "conductor")
+  {
+    return "You are the conductor. You control the tempo of the music with your Phlever.";
+  }
 }
