@@ -231,7 +231,7 @@ function draw() {
   textSize(height * 0.08);
   textAlign(CENTER, CENTER);
   fill(titleColor);
-  text('Phlever', width / 2, height * 0.1);
+  text('↨ PHLEVER ↨', width / 2, height * 0.1);
 
   showDesktopQr();
 
