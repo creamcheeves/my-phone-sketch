@@ -160,7 +160,7 @@ function draw() {
     }
   }
 
-  text(greaterThanMe, width / 2, height / 2);
+  // text(greaterThanMe, width / 2, height / 2);
   
   // role assignment based on queue
   if (greaterThanMe == 0)
