@@ -245,7 +245,7 @@ function draw() {
   {
     tSize = height * 0.04;
   } else {
-    tSize = width * 0.03;
+    tSize = width * 0.02;
   }
 
   textSize(tSize);
