@@ -237,7 +237,7 @@ function draw() {
 
   // text for instructions
   fill(255);
-  textAlign(CENTER, CENTER);
+  textAlign(CENTER, TOP);
   noStroke();
 
   let tSize = 0;
@@ -245,13 +245,13 @@ function draw() {
   {
     tSize = height * 0.04;
   } else {
-    tSize = width * 0.01;
+    tSize = width * 0.02;
   }
 
   textSize(tSize);
 
-  text(inputStatus(), width / 2, height * 0.1 + height * 0.08);
-  text(roleDescription(), width / 2, height * 0.1 + height * 0.12);
+  text(inputStatus(), width / 2, height * 0.18);
+  text(roleDescription(), width / 2, height * 0.3);
 
   // update your time in sketch value
   me.timeInSketch = millis();
@@ -455,21 +455,21 @@ function inputStatus() {
     return 'No motion sensors detected. Phlever requires rotational input!';
   }
 
-  return 'Set the bottom of your phone on a surface in portrait mode, then push or pull it from the top as though it were a lever.';
+  return 'Set the bottom of your phone on a surface in portrait mode,\nthen push or pull it from the top as though it were a lever.';
 }
 
 function roleDescription() 
 {
   if (me.role == "listener")
   {
-    return "You are a listener. Enjoy the show, or wait for your turn as conductor!";
+    return "You are a listener.\nEnjoy the show, or wait for your turn as conductor!";
   }
   if (me.role == "conductor")
   {
-    return "You are the conductor. You control the tempo of the music with your Phlever.";
+    return "You are the conductor.\nYou control the tempo of the music with your Phlever.";
   }
   if (me.role == "ambience director")
   {
-    return "You are the ambience director. You control the volume of the ambient sound with your Phlever.";
+    return "You are the ambience director.\nYou control the volume of the ambient sound with your Phlever.";
   }
 }
