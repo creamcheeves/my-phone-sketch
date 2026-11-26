@@ -260,7 +260,7 @@ function draw() {
     me.timeInSketch = 0;
   }
 
-  let doDebugging = true;
+  let doDebugging = false;
   if (!doDebugging) return;
 
   textAlign(LEFT, TOP)
