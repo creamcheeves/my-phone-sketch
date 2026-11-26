@@ -251,7 +251,7 @@ function draw() {
   textSize(tSize);
 
   text(inputStatus(), width / 2, height * 0.18);
-  text(roleDescription(), width / 2, height * 0.3);
+  text(roleDescription(), width / 2, height * 0.27);
 
   // update your time in sketch value
   me.timeInSketch = millis();
