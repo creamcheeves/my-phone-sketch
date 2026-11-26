@@ -239,9 +239,10 @@ function draw() {
   fill(255);
   textAlign(CENTER, CENTER);
   noStroke();
-  textSize(16);
+  textSize(height * 0.04);
 
   text(inputStatus(), width / 2, height * 0.1 + height * 0.08);
+  text(roleDescription(), width / 2, height * 0.1 + height * 0.12);
 
   // update your time in sketch value
   me.timeInSketch = millis();
