@@ -239,7 +239,16 @@ function draw() {
   fill(255);
   textAlign(CENTER, CENTER);
   noStroke();
-  textSize(height * 0.04);
+
+  let tSize = 0;
+  if (width > height)
+  {
+    tSize = height * 0.04;
+  } else {
+    tSize = width * 0.03;
+  }
+
+  textSize(tSize);
 
   text(inputStatus(), width / 2, height * 0.1 + height * 0.08);
   text(roleDescription(), width / 2, height * 0.1 + height * 0.12);
