@@ -159,6 +159,8 @@ function draw() {
       greaterThanMe++;
     }
   }
+
+  // text(greaterThanMe, width / 2, height / 2);
   
   // role assignment based on queue
   if (greaterThanMe == 0)
@@ -169,7 +171,7 @@ function draw() {
   {
     me.role = "ambience director";
   }
-  if (me.timeInSketch == 0)
+  if (me.timeInSketch == 0 || greaterThanMe > 1)
   {
     me.role = "listener";
   }
@@ -237,11 +239,21 @@ function draw() {
 
   // text for instructions
   fill(255);
-  textAlign(CENTER, CENTER);
+  textAlign(CENTER, TOP);
   noStroke();
-  textSize(16);
 
-  text(inputStatus(), width / 2, height * 0.1 + height * 0.08);
+  let tSize = 0;
+  if (width > height)
+  {
+    tSize = height * 0.04;
+  } else {
+    tSize = width * 0.03;
+  }
+
+  textSize(tSize);
+
+  text(inputStatus(), width / 2, height * 0.18);
+  text(roleDescription(greaterThanMe), width / 2, height * 0.27);
 
   // update your time in sketch value
   me.timeInSketch = millis();
@@ -252,6 +264,8 @@ function draw() {
 
   let doDebugging = false;
   if (!doDebugging) return;
+
+  textAlign(LEFT, TOP)
 
   // -- DEBUGGING INFORMATION, NOT SHOWN ON FINAL VERSION --
   text("debugging!", 20, 58);
@@ -445,21 +459,21 @@ function inputStatus() {
     return 'No motion sensors detected. Phlever requires rotational input!';
   }
 
-  return 'Set the bottom of your phone on a surface in portrait mode, then push or pull it from the top as though it were a lever.';
+  return 'Set the bottom of your phone on a surface in portrait mode,\nthen push or pull it from the top as though it were a lever.';
 }
 
-function roleDescription() 
+function roleDescription(greaterThanMe) 
 {
   if (me.role == "listener")
   {
-    return "You are a listener. Enjoy the show, or wait for your turn as conductor!";
+    return "You are a listener. " + greaterThanMe + " people are ahead of you.\nEnjoy the show, or wait for your turn as conductor!";
   }
   if (me.role == "conductor")
   {
-    return "You are the conductor. You control the tempo of the music with your Phlever.";
+    return "You are the conductor.\nYou control the tempo of the music with your Phlever.";
   }
   if (me.role == "ambience director")
   {
-    return "You are the ambience director. You control the volume of the ambient sound with your Phlever.";
+    return "You are the ambience director.\nYou control the volume of the ambient sound with your Phlever.";
   }
 }
