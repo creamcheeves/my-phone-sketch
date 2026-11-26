@@ -169,7 +169,7 @@ function draw() {
   {
     me.role = "ambience director";
   }
-  if (me.timeInSketch == 0)
+  if (me.timeInSketch == 0 || greaterThanMe > 1)
   {
     me.role = "listener";
   }
@@ -260,8 +260,10 @@ function draw() {
     me.timeInSketch = 0;
   }
 
-  let doDebugging = false;
+  let doDebugging = true;
   if (!doDebugging) return;
+
+  textAlign(LEFT, TOP)
 
   // -- DEBUGGING INFORMATION, NOT SHOWN ON FINAL VERSION --
   text("debugging!", 20, 58);
